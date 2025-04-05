@@ -2,6 +2,7 @@
 An improved version of the assembly project, this game features multiplayer, animations and AI
 
 # The files:
+The kirby multiplayer game.docx file contains a detailed explenation of the game.
 Most of the files are pictures used within the code.
 The code files are divided into 6 files: client.py, client2.py, ai.py, server.py, network.py, kirby.py
 
