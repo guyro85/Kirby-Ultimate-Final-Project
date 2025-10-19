@@ -2,9 +2,52 @@ import socket
 from _thread import *
 import pickle
 import ai
+import time
 
-SERVER = "10.0.0.3"
+# Auto-detect server IP address
+def get_local_ip():
+    """
+    Automatically detect the local IP address of this computer
+    """
+    try:
+        # Create a socket to determine the local IP
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Connect to an external address (doesn't actually send data)
+        temp_socket.connect(("8.8.8.8", 80))
+        local_ip = temp_socket.getsockname()[0]
+        temp_socket.close()
+        return local_ip
+    except Exception:
+        # Fallback method
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except:
+            return "127.0.0.1"
+
+def broadcast_server(server_ip, server_port, broadcast_port=4001):
+    """
+    Broadcast server information on the local network
+    """
+    broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    message = f"{server_ip}:{server_port}".encode()
+
+    while True:
+        try:
+            broadcast_socket.sendto(message, ('<broadcast>', broadcast_port))
+            time.sleep(1)  # Broadcast every second
+        except Exception as e:
+            print(f"Broadcast error: {e}")
+            time.sleep(1)
+
+SERVER = get_local_ip()
 PORT = 4000
+BROADCAST_PORT = 4001
+
+print(f"Server IP auto-detected: {SERVER}")
+print(f"Broadcasting server information on port {BROADCAST_PORT}...")
+
 enemies = [ai.AI(700, 500, 40, 1)]
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 CURRENT_PLAYER = 0
@@ -82,6 +125,7 @@ def threaded_client(conn, p):
 
 
 start_new_thread(ai.move, (enemies[0],))  # runs the AI
+start_new_thread(broadcast_server, (SERVER, PORT, BROADCAST_PORT))  # broadcast server info
 
 while True:  # start receiving new players
     con, adrr = s.accept()
