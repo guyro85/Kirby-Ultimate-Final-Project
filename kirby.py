@@ -148,20 +148,22 @@ LIFE = pygame.image.load("LIFE.png")
 # funcs==============================================================================================================
 
 def kirby(x, y, img, win):
-    "the function displays the image of kirby"
-    win.blit(img, (x, y))
+    "the function displays the image of kirby scaled 1.5x"
+    scaled_img = pygame.transform.scale(img, (int(img.get_width() * 1.5), int(img.get_height() * 1.5)))
+    win.blit(scaled_img, (x, y))
     pygame.display.update()
 
 
 def enm(x, y, img, win):
-    "the function displays the image of the AI"
-    win.blit(img, (x, y))
+    "the function displays the image of the AI scaled 1.5x"
+    scaled_img = pygame.transform.scale(img, (int(img.get_width() * 1.5), int(img.get_height() * 1.5)))
+    win.blit(scaled_img, (x, y))
     pygame.display.update()
 
 
 def drawWoosh(x, y, anm, win):
     """
-    the function draws the image of the whoosh (the enemy's weapon)
+    the function draws the image of the whoosh (the enemy's weapon) scaled 1.5x
     :param x: the x position
     :param y: the y position
     :param anm: the animation (1 or 2 in this case)
@@ -172,7 +174,8 @@ def drawWoosh(x, y, anm, win):
     if anm == 1:
         img = WH1
 
-    win.blit(img, (x, y))
+    scaled_img = pygame.transform.scale(img, (int(img.get_width() * 1.5), int(img.get_height() * 1.5)))
+    win.blit(scaled_img, (x, y))
     pygame.display.update()
 
 

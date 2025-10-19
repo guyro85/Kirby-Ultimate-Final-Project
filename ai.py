@@ -2,7 +2,7 @@ import time
 import player
 
 LIFE = 15
-players = [player.Player(0, 500, 40, 1, 0), player.Player(400, 500, 40, 2, 42)]
+players = [player.Player(0, 500, 60, 1, 0), player.Player(400, 500, 60, 2, 42)]
 
 
 class AI:

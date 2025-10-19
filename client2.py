@@ -17,7 +17,7 @@ pygame.mixer.music.load("opening_music.mp3")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
-gameDisplay = pygame.display.set_mode((display_width,display_height))  # pygame.FULLSCREEN
+gameDisplay = pygame.display.set_mode((display_width, display_height), pygame.FULLSCREEN)
 gameDisplay.fill(black)
 clock = pygame.time.Clock()
 kirby.menuScreen(gameDisplay,menu_screen)
@@ -75,6 +75,10 @@ while run:
         p1.anm = 33
     else:
         p1.anm = 0
+
+    # Apply gravity every frame to keep player grounded or falling smoothly
+    p1.applyGravity()
+
     kirby.drawKirby(p1.x, p1.y, p1.anm + p1.amp, gameDisplay)  # draws kirby player 1
     facing = checkForMove(p1, n, facing, gameDisplay)
 

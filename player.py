@@ -3,6 +3,10 @@ import pygame
 import time
 
 LIFE = 5
+GRAVITY = 1.5
+MAX_FALL_SPEED = 15
+FLOOR_Y = 500
+JUMP_VELOCITY = -15
 
 
 class Player:
@@ -17,6 +21,35 @@ class Player:
         self.hit = 0  # if the other player was hit this equals to 1
         self.atk = 0  # this equals 1 if the enemy was hit by the player
         self.amp = amp
+        self.velocityY = 0  # vertical velocity for gravity
+        self.isGrounded = True  # whether player is on the ground
+
+    def applyGravity(self):
+        """
+        Apply gravity to the player continuously. This ensures smooth falling
+        and prevents the player from floating in mid-air or clipping through the floor.
+        """
+        if not self.isGrounded:
+            # Apply gravity acceleration
+            self.velocityY += GRAVITY
+            # Cap fall speed to prevent excessive velocity
+            if self.velocityY > MAX_FALL_SPEED:
+                self.velocityY = MAX_FALL_SPEED
+
+            # Update vertical position
+            self.y += self.velocityY
+
+            # Prevent going above screen (ceiling boundary)
+            if self.y < 0:
+                self.y = 0  # Hit ceiling, stop at top of screen
+                self.velocityY = 0  # Stop upward momentum
+
+            # Check if landed on ground
+            if self.y >= FLOOR_Y:
+                self.y = FLOOR_Y  # Snap to floor to prevent clipping
+                self.velocityY = 0  # Reset velocity
+                self.isGrounded = True
+                self.inAir = 0
 
     def moveLeft(self, n, win):
         """
@@ -80,41 +113,48 @@ class Player:
 
     def moveJump(self, n, dir, win):
         """
-        the player jumps, in the jump there are 3 times going up and 3 times down
-        unless it went up less than 3 times duo to an obstacle
+        Player jumps using velocity-based physics with gravity.
+        Jump continues until player lands back on ground.
         """
-        cnt = 0
-        rise = 0  # the number of times the character went up
+        # Set initial jump velocity
+        self.velocityY = JUMP_VELOCITY
+        self.isGrounded = False
+        self.inAir = 1
+
         anm = 17
         amp = 0
         if dir == 0:
             amp = 9
-        while anm <= 22:
-            time.sleep(0.1)
+
+        # Continue jump until player lands
+        while not self.isGrounded:
+            time.sleep(0.033)  # ~30 FPS for smooth animation
+
+            # Check for flight activation
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_d:
-                        if checkForObstacle(self.x + 20, self.y):
-                            self.x += 20
-                    if event.key == pygame.K_a:
-                        if checkForObstacle(self.x - 20, self.y):
-                            self.x -= 20
                     if event.key == pygame.K_w:
                         self.flight(n, win, dir)
                         return
-            if cnt < 3:
-                if checkForObstacle(self.x, self.y - 20):
-                    self.y -= 20
-                    rise += 1
-                cnt += 1
-            elif cnt >= 3:
-                if checkForObstacle(self.x, self.y + 20) and rise > 0:
-                    self.y += 20
-                    rise -= 1
 
+            # Check continuously held keys for horizontal air control
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_d]:
+                if checkForObstacle(self.x + 10, self.y):
+                    self.x += 10
+            if keys[pygame.K_a]:
+                if checkForObstacle(self.x - 10, self.y):
+                    self.x -= 10
+
+            # Apply gravity and update position
+            self.applyGravity()
+
+            # Cycle through jump animation frames
             self.anm = anm + amp
             self.print_sequence(n, win)
             anm += 1
+            if anm > 22:
+                anm = 17  # Loop jump animation if still in air
 
     def moveDown(self, n, dir, win):
         """the player ducks"""
@@ -140,7 +180,7 @@ class Player:
     def slide_left(self, n, win):
         self.anm = 24
         facing = 0
-        for x in range(0, 3):
+        for x in range(0, 9):
             if checkForObstacle(self.x - 10, self.y):
                 self.x -= 10
 
@@ -163,12 +203,12 @@ class Player:
                 kirby.drawKirby(self.x, self.y, self.anm + self.amp, win)
 
             self.atk = 0
-            time.sleep(0.05)
+            time.sleep(0.03)
 
     def slide_right(self, n, win):
         self.anm = 25
         facing = 0
-        for x in range(0, 3):
+        for x in range(0, 9):
             if checkForObstacle(self.x + 10, self.y):
                 self.x += 10
 
@@ -191,28 +231,28 @@ class Player:
                 kirby.drawKirby(self.x, self.y, self.anm + self.amp, win)
 
             self.atk = 0
-            time.sleep(0.05)
+            time.sleep(0.03)
 
     def flight(self, n, win, dir):
         """
-        the player enters to flight mode, meaning he will fall to the ground over time.
-        in flight mode the player can move in all directions and can be attacked
+        Player enters flight mode. Gravity still applies but player can
+        counteract it by pressing W. Falls smoothly to ground over time.
         :param n: the network
         :param win: the window
         :param dir: the direction that the player is facing
-        :return: the direction that the player is facing
         """
         if dir == 1:
             anm = 37
         else:
             anm = 34
 
-        floor = 500
         self.inAir = 1
+        self.isGrounded = False
         con1 = 0
         con2 = 0
         con3 = 0
         con4 = 1
+        anm_counter = 0  # Counter to slow down animation
 
         while self.inAir:
 
@@ -243,32 +283,39 @@ class Player:
                     if event.key == pygame.K_w:
                         con4 = 0
 
+            # Horizontal movement
             if con1:
-                if checkForObstacle(self.x + 20, self.y):
-                    self.x += 20
+                if checkForObstacle(self.x + 10, self.y):
+                    self.x += 10
             if con2:
-                if checkForObstacle(self.x - 20, self.y):
-                    self.x -= 20
+                if checkForObstacle(self.x - 10, self.y):
+                    self.x -= 10
+
+            # Vertical movement - counteract or add to gravity
             if con3:
-                if checkForObstacle(self.x, self.y + 20):
-                    self.y += 20
+                # Pressing down - add downward velocity
+                self.velocityY += 2
             if con4:
-                if checkForObstacle(self.x, self.y - 40):
-                    self.y -= 40
+                # Pressing up - counteract gravity (swim upward)
+                self.velocityY -= 3
+
+            # Apply gravity
+            self.applyGravity()
 
             self.anm = anm
-            self.y = checkAir(self.y, 1)
-            if self.y == floor:
-                self.inAir = 0
-
             self.print_sequence(n, win)
 
-            time.sleep(0.05)
-            if anm == 36:
-                anm = 34
-            elif anm == 39:
-                anm = 37
-            anm += 1
+            time.sleep(0.033)  # Smoother flight animation
+
+            # Slow down animation - only update every 4 frames
+            anm_counter += 1
+            if anm_counter >= 4:
+                anm_counter = 0
+                if anm == 36:
+                    anm = 34
+                elif anm == 39:
+                    anm = 37
+                anm += 1
 
     def damaged(self, n, win, facing):
         """
@@ -282,17 +329,17 @@ class Player:
         self.hit = 0
 
         if facing == 0:
-            for x in range(0, 3):
-                if checkForObstacle(self.x + 20, self.y):
-                    self.x += 20
+            for x in range(0, 6):
+                if checkForObstacle(self.x + 10, self.y):
+                    self.x += 10
 
                 self.print_sequence(n, win)
                 time.sleep(0.05)
         else:
             self.anm += 1
-            for x in range(0, 3):
-                if checkForObstacle(self.x - 20, self.y):
-                    self.x -= 20
+            for x in range(0, 6):
+                if checkForObstacle(self.x - 10, self.y):
+                    self.x -= 10
 
                 self.print_sequence(n, win)
                 time.sleep(0.05)
@@ -341,7 +388,7 @@ def checkForObstacle(x, y):
     """
     floor = 500
 
-    if (x > 760 or x < 0) or (y > floor or y < 0):
+    if (x > 740 or x < 0) or (y > floor or y < 0):
         return 0  # does not fit to the location
     else:
         return 1
