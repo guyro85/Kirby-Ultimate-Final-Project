@@ -437,7 +437,7 @@ def drawKirby(x, y, anm, win):
         kirby(x, y, KRR, win)
 
 
-def drawEnm1(x, y, anm, wh, win):
+def drawEnm1(x, y, anm, wh, win, weapon_spin=1):
     """
     the function draws enemy 1(com) according to the animation specified in anm
     :param x: the x position
@@ -445,6 +445,7 @@ def drawEnm1(x, y, anm, wh, win):
     :param anm: the animation
     :param wh: the weapon distance from the enemy
     :param win: the window
+    :param weapon_spin: the weapon spin animation frame (1 or 2)
     """
 
     if anm == 1:
@@ -478,15 +479,15 @@ def drawEnm1(x, y, anm, wh, win):
         enm(x, y, E1ML10, win)
 
         if wh == 1:
-            drawWoosh(x - 50, y, anm, win)
+            drawWoosh(x - 50, y, weapon_spin, win)
         elif wh == 2:
-            drawWoosh(x - 100, y, anm, win)
+            drawWoosh(x - 100, y, weapon_spin, win)
         elif wh == 3:
-            drawWoosh(x - 150, y, anm, win)
+            drawWoosh(x - 150, y, weapon_spin, win)
         elif wh == 4:
-            drawWoosh(x - 100, y, anm, win)
+            drawWoosh(x - 100, y, weapon_spin, win)
         elif wh == 5:
-            drawWoosh(x - 50, y, anm, win)
+            drawWoosh(x - 50, y, weapon_spin, win)
 
     elif anm == 11:
         enm(x, y, E1ML11, win)
@@ -522,15 +523,15 @@ def drawEnm1(x, y, anm, wh, win):
         enm(x, y, E1MR10, win)
 
         if wh == 1:
-            drawWoosh(x + 50, y, anm, win)
+            drawWoosh(x + 50, y, weapon_spin, win)
         elif wh == 2:
-            drawWoosh(x + 100, y, anm, win)
+            drawWoosh(x + 100, y, weapon_spin, win)
         elif wh == 3:
-            drawWoosh(x + 150, y, anm, win)
+            drawWoosh(x + 150, y, weapon_spin, win)
         elif wh == 4:
-            drawWoosh(x + 100, y, anm, win)
+            drawWoosh(x + 100, y, weapon_spin, win)
         elif wh == 5:
-            drawWoosh(x + 50, y, anm, win)
+            drawWoosh(x + 50, y, weapon_spin, win)
 
     elif anm == 22:
         enm(x, y, E1MR11, win)

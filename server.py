@@ -48,7 +48,7 @@ BROADCAST_PORT = 4001
 print(f"Server IP auto-detected: {SERVER}")
 print(f"Broadcasting server information on port {BROADCAST_PORT}...")
 
-enemies = [ai.AI(700, 500, 60, 1)]
+enemies = [ai.AI(700, 410, 60, 1)]
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 CURRENT_PLAYER = 0
 

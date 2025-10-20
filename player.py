@@ -5,7 +5,7 @@ import time
 LIFE = 5
 GRAVITY = 1.5
 MAX_FALL_SPEED = 15
-FLOOR_Y = 500
+FLOOR_Y = 410
 JUMP_VELOCITY = -15
 
 
@@ -23,12 +23,19 @@ class Player:
         self.amp = amp
         self.velocityY = 0  # vertical velocity for gravity
         self.isGrounded = True  # whether player is on the ground
+        self.isSliding = False  # whether player is currently sliding
+        self.immunity_frames = 0  # frames of immunity remaining (2 seconds = 60 frames)
 
     def applyGravity(self):
         """
         Apply gravity to the player continuously. This ensures smooth falling
-        and prevents the player from floating in mid-air or clipping through the floor.
+        and prevents the player from floating in midair or clipping through the floor.
+        Also decrements immunity frames.
         """
+        # Decrement immunity frames
+        if self.immunity_frames > 0:
+            self.immunity_frames -= 1
+
         if not self.isGrounded:
             # Apply gravity acceleration
             self.velocityY += GRAVITY
@@ -166,9 +173,9 @@ class Player:
         while con:
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_d:
+                    if event.key == pygame.K_d and not self.isSliding:
                         self.slide_right(n, win)
-                    if event.key == pygame.K_a:
+                    if event.key == pygame.K_a and not self.isSliding:
                         self.slide_left(n, win)
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_s:
@@ -178,6 +185,7 @@ class Player:
             self.print_sequence(n, win)
 
     def slide_left(self, n, win):
+        self.isSliding = True
         self.anm = 24
         facing = 0
         for x in range(0, 9):
@@ -198,14 +206,17 @@ class Player:
             kirby.drawField(0, win, self.life)
             if p2.life > 0:
                 kirby.drawKirby(p2.x, p2.y, p2.anm + p2.amp, win)
-            kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, win)
+            kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, win, e1.weapon_spin)
             if self.life > 0:
                 kirby.drawKirby(self.x, self.y, self.anm + self.amp, win)
 
             self.atk = 0
             time.sleep(0.03)
 
+        self.isSliding = False
+
     def slide_right(self, n, win):
+        self.isSliding = True
         self.anm = 25
         facing = 0
         for x in range(0, 9):
@@ -226,12 +237,14 @@ class Player:
             kirby.drawField(0, win, self.life)
             if p2.life > 0:
                 kirby.drawKirby(p2.x, p2.y, p2.anm + p2.amp, win)
-            kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, win)
+            kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, win, e1.weapon_spin)
             if self.life > 0:
                 kirby.drawKirby(self.x, self.y, self.anm + self.amp, win)
 
             self.atk = 0
             time.sleep(0.03)
+
+        self.isSliding = False
 
     def flight(self, n, win, dir):
         """
@@ -248,10 +261,22 @@ class Player:
 
         self.inAir = 1
         self.isGrounded = False
-        con1 = 0
-        con2 = 0
-        con3 = 0
-        con4 = 1
+
+        # Initialize direction flags from currently held keys
+        keys = pygame.key.get_pressed()
+        con1 = 1 if keys[pygame.K_d] else 0
+        con2 = 1 if keys[pygame.K_a] else 0
+        con3 = 1 if keys[pygame.K_s] else 0
+        con4 = 1 if keys[pygame.K_w] else 0
+
+        # Update animation based on initial direction
+        if con1:
+            anm = 34  # Face right
+            dir = 0
+        elif con2:
+            anm = 37  # Face left
+            dir = 1
+
         anm_counter = 0  # Counter to slow down animation
 
         while self.inAir:
@@ -319,30 +344,50 @@ class Player:
 
     def damaged(self, n, win, facing):
         """
-        the player was hit, his life is decreased by 1 and he is pushed back
+        the player was hit, his life is decreased by 1, and he is pushed back
+        Only applies damage if immunity_frames is 0 (not immune)
         :param n: the network
         :param win: the window
         :param facing: the direction that the player is facing
         """
+        # Check immunity - if immune, show brief flash but don't apply damage
+        if self.immunity_frames > 0:
+            self.hit = 0
+            # Show brief damage flash animation (no knockback, no damage)
+            self.anm = 40 if facing == 0 else 41
+            self.print_sequence(n, win)
+            time.sleep(0.05)  # Brief flash
+            return
+
+        # Apply damage and set immunity (2 seconds = 60 frames at 30 FPS)
         self.life -= 1
+        self.immunity_frames = 60
         self.anm = 40
         self.hit = 0
 
         if facing == 0:
+            # Perform knockback without sending intermediate positions
             for x in range(0, 6):
                 if checkForObstacle(self.x + 10, self.y):
                     self.x += 10
+                time.sleep(0.033)  # 30 FPS for smooth animation
 
-                self.print_sequence(n, win)
-                time.sleep(0.05)
+            # Send final position to server after knockback completes
+            n.send(self)
+            # Now render the final state
+            self.print_sequence(n, win)
         else:
             self.anm += 1
+            # Perform knockback without sending intermediate positions
             for x in range(0, 6):
                 if checkForObstacle(self.x - 10, self.y):
                     self.x -= 10
+                time.sleep(0.033)  # 30 FPS for smooth animation
 
-                self.print_sequence(n, win)
-                time.sleep(0.05)
+            # Send final position to server after knockback completes
+            n.send(self)
+            # Now render the final state
+            self.print_sequence(n, win)
 
     def print_sequence(self, n, win):
         """
@@ -363,7 +408,7 @@ class Player:
             kirby.drawKirby(self.x, self.y, self.anm + self.amp, win)
         if p2.life > 0:
             kirby.drawKirby(p2.x, p2.y, p2.anm + p2.amp, win)
-        kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, win)
+        kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, win, e1.weapon_spin)
 
 
 def compare_positions(x1, y1, len1, x2, y2, len2):
@@ -386,7 +431,7 @@ def checkForObstacle(x, y):
     """
     checks if the player or com can fit to a location.
     """
-    floor = 500
+    floor = 410
 
     if (x > 740 or x < 0) or (y > floor or y < 0):
         return 0  # does not fit to the location
@@ -400,7 +445,7 @@ def checkAir(y, l):
     :param l: the level (1 - 3)
     :return: if the player is in air or not, if it is return the y value after the height drop
     """
-    floor = 500
+    floor = 410
     if y + 20 > floor:
         return floor
     return y + 20

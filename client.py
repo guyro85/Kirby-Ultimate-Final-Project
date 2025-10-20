@@ -15,7 +15,7 @@ pygame.mixer.music.load("opening_music.mp3")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
-gameDisplay = pygame.display.set_mode((display_width, display_height), pygame.FULLSCREEN)
+gameDisplay = pygame.display.set_mode((display_width, display_height))
 gameDisplay.fill(black)
 clock = pygame.time.Clock()
 kirby.menuScreen(gameDisplay, menu_screen)
@@ -76,20 +76,26 @@ while run:
     # Apply gravity every frame to keep player grounded or falling smoothly
     p1.applyGravity()
 
-    p1.print_sequence(n, gameDisplay)
-
-    facing = checkForMove(p1, n, facing, gameDisplay)
-
-    pygame.display.update()
-
+    # Always render game state (even when dead, to watch other player)
     p2 = n.send(p1)
     e1 = n.send('1')
+    kirby.drawField(0, gameDisplay, p1.life)
+    if p2.life > 0:
+        kirby.drawKirby(p2.x, p2.y, p2.anm + p2.amp, gameDisplay)
+    kirby.drawEnm1(e1.x, e1.y, e1.anm, e1.wh, gameDisplay, e1.weapon_spin)
+    if p1.life > 0:
+        kirby.drawKirby(p1.x, p1.y, p1.anm + p1.amp, gameDisplay)
+
+    # Only allow movement if player is alive
+    if p1.life > 0:
+        facing = checkForMove(p1, n, facing, gameDisplay)
+
+    pygame.display.update()
     if (p1.life <= 0 and p2.life <= 0) or e1.life <= 0:  # if both players lost or the AI, quit the main loop
         run = False
 
 
 wait = True
-p2 = n.send(p1)
 
 if p1.life > 0 or p2.life > 0:
     kirby.drawField(1, gameDisplay, 0)  # draw winning screen
