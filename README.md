@@ -1,5 +1,6 @@
 # Kirby-Ultimate-Final-Project
-An improved version of the assembly project, this game features multiplayer, animations and AI
+An improved version of the assembly project, this game features multiplayer, animations and AI  
+This game was made as a final project for my highschool CS class.
 
 # The files:
 The kirby multiplayer game.docx file contains a detailed explenation of the game.
